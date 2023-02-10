@@ -71,19 +71,30 @@ public class Main {
             return;
         }
 
-        HashMap<Integer, HashMap<String, Integer>> convertYearReport = yearlyReport.convertYearReport();
-        HashMap<Integer, HashMap<String, Integer>> convertMonthReports = monthlyReport.convertMonthReports();
         ArrayList<String> errorMonths = new ArrayList<>();
 
-        for (int i = 1; i <= convertMonthReports.size(); i++) {
-            HashMap<String, Integer> monthData = convertMonthReports.get(i);
-            HashMap<String, Integer> yearData = convertYearReport.get(i);
+        for (int i = 0; i < yearlyReport.reports.size(); i++) {
+            YearlyRecord yearlyRecord = yearlyReport.reports.get(i);
+            ArrayList<MonthlyRecord> monthlyRecords = monthlyReport.reports.get(yearlyRecord.month);
+
+            int allMonthIncome = 0;
+            int allMonthConsumption = 0;
+
+            for (MonthlyRecord monthlyRecord : monthlyRecords) {
+                if (yearlyRecord.isExpense && monthlyRecord.isExpense) {
+                    allMonthConsumption += monthlyRecord.quantity * monthlyRecord.sumOfOne;
+                }
+
+                if (!yearlyRecord.isExpense && !monthlyRecord.isExpense) {
+                    allMonthIncome += monthlyRecord.quantity * monthlyRecord.sumOfOne;
+                }
+            }
 
             if (
-                !Objects.equals(monthData.get("fullIncome"), yearData.get("income")) ||
-                !Objects.equals(monthData.get("fullConsumption"), yearData.get("consumption"))
+                (yearlyRecord.isExpense && yearlyRecord.amount != allMonthConsumption) ||
+                (!yearlyRecord.isExpense && yearlyRecord.amount != allMonthIncome)
             ) {
-                errorMonths.add(monthlyReport.monthNames[i - 1]);
+                errorMonths.add(monthlyReport.monthNames[yearlyRecord.month - 1]);
             }
         }
 

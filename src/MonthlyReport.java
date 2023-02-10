@@ -19,26 +19,27 @@ class MonthlyReport {
         "Декабрь"
     };
     FileReader fileReader = new FileReader("Невозможно прочитать файл с месячным отчётом. Возможно файл не находится в нужной директории.");
-    HashMap<String, ArrayList<HashMap<String, String>>> reports = new HashMap<>();
+    HashMap<Integer, ArrayList<MonthlyRecord>> reports = new HashMap<>();
 
     void readAllReport() {
         for (int i = 1; i < 4; i++) {
             List<String> report = fileReader.readFileContents("resources/m.20210" + i + ".csv");
-            ArrayList<HashMap<String, String>> fileList = new ArrayList<>();
+            ArrayList<MonthlyRecord> fileList = new ArrayList<>();
 
             for (int j = 1; j < report.size(); j++) {
-                HashMap<String, String> entry = new HashMap<>();
                 String[] entrySplit = report.get(j).split(",");
 
-                entry.put("name", entrySplit[0]);
-                entry.put("isExpense", entrySplit[1]);
-                entry.put("quantity", entrySplit[2]);
-                entry.put("sumOfOne", entrySplit[3]);
+                MonthlyRecord monthlyRecord = new MonthlyRecord(
+                    entrySplit[0],
+                    Objects.equals(entrySplit[1], "TRUE"),
+                    Integer.parseInt(entrySplit[2]),
+                    Integer.parseInt(entrySplit[3])
+                );
 
-                fileList.add(entry);
+                fileList.add(monthlyRecord);
             }
 
-            reports.put("0" + i, fileList);
+            reports.put(i, fileList);
         }
     }
 
@@ -50,34 +51,32 @@ class MonthlyReport {
             return;
         }
 
-        for (String key : reports.keySet()) {
-            ArrayList<HashMap<String, String>> report = reports.get(key);
+        for (int key : reports.keySet()) {
+            ArrayList<MonthlyRecord> report = reports.get(key);
             printMonthReport(report, key);
         }
     }
 
-    void printMonthReport(ArrayList<HashMap<String, String>> report, String monthNumber) {
+    void printMonthReport(ArrayList<MonthlyRecord> report, int monthNumber) {
         System.out.println("------");
-        System.out.println("Месяц - " + monthNames[Integer.parseInt(monthNumber) - 1]);
+        System.out.println("Месяц - " + monthNames[monthNumber - 1]);
         mostProfitableProduct(report);
         biggestWaste(report);
         System.out.println("------");
     }
 
     /** Самый прибыльный товар */
-    void mostProfitableProduct(ArrayList<HashMap<String, String>> report) {
+    void mostProfitableProduct(ArrayList<MonthlyRecord> report) {
         int maxCost = 0;
         String name = "";
 
-        for (HashMap<String, String> entry : report) {
-            if (Objects.equals(entry.get("isExpense"), "FALSE")) {
-                int quantity = Integer.parseInt(entry.get("quantity"));
-                int sumOfOne = Integer.parseInt(entry.get("sumOfOne"));
-                int cost = quantity * sumOfOne;
+        for (MonthlyRecord record : report) {
+            if (!record.isExpense) {
+                int cost = record.quantity * record.sumOfOne;
 
                 if (maxCost < cost) {
                     maxCost = cost;
-                    name = entry.get("name");
+                    name = record.name;
                 }
             }
         }
@@ -86,47 +85,21 @@ class MonthlyReport {
     }
 
     /** Самая большая трата */
-    void biggestWaste(ArrayList<HashMap<String, String>> report) {
+    void biggestWaste(ArrayList<MonthlyRecord> report) {
         int maxWaste = 0;
         String name = "";
 
-        for (HashMap<String, String> entry : report) {
-            if (Objects.equals(entry.get("isExpense"), "TRUE")) {
-                int sumOfOne = Integer.parseInt(entry.get("sumOfOne"));
+        for (MonthlyRecord record : report) {
+            if (record.isExpense) {
+                int sumOfOne = record.sumOfOne * record.quantity;
 
                 if (maxWaste < sumOfOne) {
                     maxWaste = sumOfOne;
-                    name = entry.get("name");
+                    name = record.name;
                 }
             }
         }
 
         System.out.println("Самая большая трата - " + name + ": " + maxWaste);
-    }
-
-    HashMap<Integer, HashMap<String, Integer>> convertMonthReports() {
-        HashMap<Integer, HashMap<String, Integer>> convertMonthReports = new HashMap<>();
-
-        for (String key : reports.keySet()) {
-            HashMap<String, Integer> entryData = new HashMap<>();
-            int month = Integer.parseInt(key);
-            int fullIncome = 0;
-            int fullConsumption = 0;
-
-            for (HashMap<String, String> entry : reports.get(key)) {
-                if (Objects.equals(entry.get("isExpense"), "TRUE")) {
-                    fullConsumption += Integer.parseInt(entry.get("sumOfOne")) * Integer.parseInt(entry.get("quantity"));
-                } else {
-                    fullIncome += Integer.parseInt(entry.get("sumOfOne")) * Integer.parseInt(entry.get("quantity"));
-                }
-            }
-
-            entryData.put("fullIncome", fullIncome);
-            entryData.put("fullConsumption", fullConsumption);
-
-            convertMonthReports.put(month, entryData);
-        }
-
-        return convertMonthReports;
     }
 }
